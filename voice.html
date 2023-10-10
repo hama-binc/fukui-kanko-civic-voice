@@ -32,13 +32,19 @@ const isMatch = (d) => {
   return true;
 };
 
+const text2html = (s) => {
+  s = s.replace(/\n/g, "<br>\n");
+  s = s.replace(/！！！！！！！！！！！！！！！！/g, "！！！！！！！！！！！！！！！！ ");
+  return s;
+};
+
 const show = async () => {
   main.innerHTML = "";
   let cnt = 0;
   for (const d of data) {
     if (!isMatch(d)) continue;
     const div = document.createElement("div");
-    div.innerHTML = d.voice + " (" + d.happiness + "、" + d.age + " " + d.sex + ")";
+    div.innerHTML = text2html(d.voice) + " (" + d.happiness + "、" + d.age + " " + d.sex + ")";
     main.appendChild(div);
     cnt++;
   }
@@ -64,7 +70,7 @@ show();
 body {
   background-color: #f44;
   color: #fff;
-  overflow-x: hidden; /* ?? */
+  x-overflow-x: hidden; /* ?? */
 }
 /*
 * {
@@ -76,8 +82,8 @@ main > div {
   color: #222;
   margin: .3em;
   padding: 1em;
-  white-space: pre-wrap;
-  word-break: break-all;
+  x-white-space: pre-wrap;
+  word-break: break-all !important;
   border-radius: .5em;
 }
 #divcount {
