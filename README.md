@@ -1,6 +1,7 @@
 # civic-voice
  
 - [鯖江市民の声](https://code4sabae.github.io/civic-voice/voice.html)
+- [鯖江将来ビジョンアンケート結果 2023](https://code4sabae.github.io/civic-voice/piechart.html)
 
 ## オープンデータ
 
