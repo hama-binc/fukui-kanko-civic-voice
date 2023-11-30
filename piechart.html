@@ -1,4 +1,3 @@
-
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
 <title>鯖江将来ビジョンアンケート結果 2023</title>
 <script type="module">
@@ -15,21 +14,81 @@ const clear = (ele) => ele.innerHTML = "";
 //const url = "R5bijon_chugakusei_kekka.csv";
 const unit = "人";
 
-const showGraph = () => {
+const seloffset = 3;
+
+let animduration = 100;
+
+const filters = [];
+const isFiltered = (d) => {
+	for (let i = 0; i < d.length; i++) {
+		const f = filters[i];
+		if (!f) continue;
+		const v = d[i];
+		if (f[v] && !f[v].checked) return false;
+	}
+	//console.log(d);
+	return true;
+};
+
+const makeSelectOption = () => {
 	clear(btns);
-	const offset = 3;
-	for (let i = offset; i < csvdata[0].length; i++) {
+	const select = document.createElement("select");
+	btns.appendChild(select);
+	for (let i = seloffset; i < csvdata[0].length; i++) {
 		const d = csvdata[0][i];
 		const btn = create("option");
 		btn.textContent = d;
 		btn.value = i;
-		btns.appendChild(btn);
+		select.appendChild(btn);
 	}
-	btns.onchange = () => sel(btns.value);
-	sel(offset);
+	select.onchange = () => sel(select.value);
+	sel(seloffset);
+
+	filters.length = 0;
+	animduration = chkmulti.checked ? 1 : 100;
+	if (chkmulti.checked) {
+		const btns2 = create("div");
+		btns.appendChild(btns2);
+		for (let i = seloffset; i < csvdata[0].length; i++) {
+			const d = csvdata[0][i];
+			const d2 = makeResult(i);
+			if (Object.keys(d2).length > 20 || d.endsWith("その他")) continue;
+
+			const div = document.createElement("div");
+			btns2.appendChild(div);
+			const div2 = document.createElement("h3");
+			div2.textContent = (i - seloffset + 1) + ". " + d;
+			div.appendChild(div2);
+			const chks = {};
+			for (const q in d2) {
+				const lbl = document.createElement("labal");
+				const chk = document.createElement("input");
+				chk.type = "checkbox";
+				const nn = document.createElement("span");
+				nn.textContent = q;
+				lbl.appendChild(chk);
+				lbl.appendChild(nn);
+				div.appendChild(lbl);
+				chk.checked = true;
+				chk.oninput = () => sel(select.value);
+				chks[q] = chk;
+			}
+			filters[i] = chks;
+			/*
+			const btn = create("option");
+			btn.textContent = d;
+			btn.value = i;
+			select.appendChild(btn);
+			*/
+		}
+	}
+};
+const showGraph = () => {
+	//makeSelectData();
+	makeSelectOption();
 };
 
-const sel = function(idx) {
+const makeResult = (idx) => {
 	const d = {};
 	const data = csvdata;
 	let didx = data[0][idx];
@@ -41,13 +100,15 @@ const sel = function(idx) {
 	}
 	for (let i = 1; i < data.length; i++) {
 		const item = data[i];
+		if (!isFiltered(item)) continue;
 		const val = item[idx];
 		if (map != null) {
 			const n = map.indexOf(val + ":");
 			if (n >= 0) {
 				const m = map.indexOf(" ", n);
-				if (m < 0)
+				if (m < 0) {
 					m = map.indexOf("）", n);
+				}
 				val = map.substring((val + ":").length + n, m);
 			}
 		}
@@ -69,7 +130,11 @@ const sel = function(idx) {
 			d2[name] = d[name];
 		}
 	}
-	console.log(d, d2);
+	//console.log(d2);
+	return d2;
+};
+const sel = function(idx) {
+	const d2 = makeResult(idx);
 	const gdata = {
 		data: d2,
 		unit,
@@ -203,7 +268,7 @@ const showCircleGraph = function(c, gdata) {
 		return t;
 	};
 	
-	let t = 0;
+	let t = 1;
 	g.draw = function() {
 		g.setColor(255, 255, 255);
 		g.fillRect(0, 0, g.cw, g.ch);
@@ -212,7 +277,7 @@ const showCircleGraph = function(c, gdata) {
 		const cy = g.ch / 2;
 		const r = Math.min(g.cw, g.ch) / 2 * .95;
 		
-		const max = Math.PI * 2 * animation(t / 100, 1);
+		const max = Math.PI * 2 * animation(t / animduration, 1);
 		const f = function(dx, dy, s, v) {
 			g.translate(dx, dy);
 			let th = -Math.PI / 2;
@@ -249,7 +314,7 @@ const showCircleGraph = function(c, gdata) {
 		}
 		g.fillTextCenter("総数", cx, cy - fh / 6);
 		g.fillTextCenter(Num.addComma(sum) + unit, cx, cy + fh + fh / 6);
-		if (t >= 100) {
+		if (t >= animduration) {
 			clearInterval(timer);
 		}
 	};
@@ -283,24 +348,28 @@ const show = async (url) => {
 	console.log(url);
 	csvdata = await CSV.fetch(url);
 	showGraph();
+	chkmulti.oninput = () => showGraph();
 };
 
-const list = [
-	["chugakusei", "中学生"],
-	["kokosei", "高校生"],
-	["ippan", "一般"],
-];
-for (const l of list) {
-	const opt = create("option");
-	const url = "R5bijon_" + l[0] + "_kekka.csv";
-	opt.value = url;
-	opt.textContent = l[1];
-	console.log(l);
-	seldata.appendChild(opt);
-	seldata.onchange = () => show(seldata.value);
+const makeSelectData = () => {
+	clear(seldata);
+	const list = [
+		["chugakusei", "中学生"],
+		["kokosei", "高校生"],
+		["ippan", "一般"],
+	];
+	for (const l of list) {
+		const opt = create("option");
+		const url = "R5bijon_" + l[0] + "_kekka.csv";
+		opt.value = url;
+		opt.textContent = l[1];
+		seldata.appendChild(opt);
+		seldata.onchange = () => show(seldata.value);
+	};
 };
 
 onload = async () => {
+	makeSelectData();
 	show(seldata.value);
 };
 
@@ -373,6 +442,15 @@ button {
 #qbox {
 	margin: 0.5em;
 }
+h3 {
+	margin: 0.2em;
+}
+/*
+#btns > *:nth-child(2) {
+	text-align: left;
+	padding: 0 1em;
+}
+*/
 #credit {
 	margin-top: 1em;
 }
@@ -383,10 +461,11 @@ button {
 <h1>鯖江将来ビジョンアンケート結果 2023</h1>
 
 <select id="seldata"></select><br>
-<select id="btns"></select><br>
+<div id="btns"></div><br>
 <canvas id="canvas"></canvas>
 <div id="tbl"></div>
 	
+<label><input type="checkbox" id="chkmulti">高度な分析</label>
 <div id="credit">
 DATA: <a href=https://www.city.sabae.fukui.jp/about_city/opendata/data_list/172825719.html>鯖江市政に関する市民アンケート結果（Excel） – めがねのまちさばえ 鯖江市<br>
 forked from: <a href=https://fukuno.jig.jp/app/csv/qgraph-localict2018.html>福井県こどもプログラミング協議会 2018年度 地域ICTクラブ アンケート結果</a><br>
