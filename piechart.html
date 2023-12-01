@@ -112,10 +112,13 @@ const makeResult = (idx) => {
 				val = map.substring((val + ":").length + n, m);
 			}
 		}
-		if (!d[val]) {
-			d[val] = 0;
+		const vals = val.split(";");
+		for (const v of vals) {
+			if (!d[v]) {
+				d[v] = 0;
+			}
+			d[v]++;
 		}
-		d[val]++;
 	}
 	// name change
 	const d2 = {};
