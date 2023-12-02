@@ -12,7 +12,6 @@ const create = (tag) => document.createElement(tag);
 const clear = (ele) => ele.innerHTML = "";
 
 //const url = "R5bijon_chugakusei_kekka.csv";
-const unit = "人";
 
 const seloffset = 3;
 
@@ -24,13 +23,24 @@ const isFiltered = (d) => {
 		const f = filters[i];
 		if (!f) continue;
 		const v = d[i];
-		if (f[v] && !f[v].checked) return false;
+		const vv = v.split(";");
+		let flg = false;
+		for (const v1 of vv) {
+			if (f[v1] && f[v1].checked) {
+				flg = true;
+				break;
+			}
+		}
+		if (!flg) {
+			return false;
+		}
 	}
 	//console.log(d);
 	return true;
 };
 
 const makeSelectOption = () => {
+	const bksel = btns.querySelector("select")?.value;
 	clear(btns);
 	const select = document.createElement("select");
 	btns.appendChild(select);
@@ -42,7 +52,12 @@ const makeSelectOption = () => {
 		select.appendChild(btn);
 	}
 	select.onchange = () => sel(select.value);
-	sel(seloffset);
+	if (bksel !== undefined) {
+		select.value = bksel;
+	}
+	//sel(seloffset);
+	sel(select.value);
+
 
 	filters.length = 0;
 	animduration = chkmulti.checked ? 1 : 100;
@@ -51,7 +66,7 @@ const makeSelectOption = () => {
 		btns.appendChild(btns2);
 		for (let i = seloffset; i < csvdata[0].length; i++) {
 			const d = csvdata[0][i];
-			const d2 = makeResult(i);
+			const d2 = makeResult(i).data;
 			if (Object.keys(d2).length > 20 || d.endsWith("その他")) continue;
 
 			const div = document.createElement("div");
@@ -98,9 +113,12 @@ const makeResult = (idx) => {
 		map = didx.substring(n + 1);
 		didx = didx.substring(0, n);
 	}
+	let sum = 0;
+	let flgmulti = false;
 	for (let i = 1; i < data.length; i++) {
 		const item = data[i];
 		if (!isFiltered(item)) continue;
+		sum++;
 		const val = item[idx];
 		if (map != null) {
 			const n = map.indexOf(val + ":");
@@ -113,6 +131,9 @@ const makeResult = (idx) => {
 			}
 		}
 		const vals = val.split(";");
+		if (!flgmulti) {
+			flgmulti = vals.length > 1;
+		}
 		for (const v of vals) {
 			if (!d[v]) {
 				d[v] = 0;
@@ -134,14 +155,14 @@ const makeResult = (idx) => {
 		}
 	}
 	//console.log(d2);
-	return d2;
+	if (flgmulti) {
+		return { data: d2, unit: "人", sum };
+	} else {
+		return { data: d2, unit: "人" };
+	}
 };
 const sel = function(idx) {
-	const d2 = makeResult(idx);
-	const gdata = {
-		data: d2,
-		unit,
-	};
+	const gdata = makeResult(idx);
 	showCircleGraph(canvas, gdata);
 	clear(tbl);
 	showTable(tbl, gdata);
@@ -151,10 +172,15 @@ const showTable = function(div, gdata) {
 	const data = gdata.data;
 	const unit = gdata.unit;
 	const d = [];
-	let sum = 0;
+	let sum = gdata.sum;
+	if (sum === undefined) {
+		sum = 0;
+		for (const n in data) {
+			sum += data[n];
+		}
+	}
 	for (const n in data) {
 		d.push([ n, data[n] ]);
-		sum += data[n];
 	}
 	d.sort(function(a, b) {
 		if (a[1] < b[1])
@@ -210,7 +236,7 @@ const omitData = (data) => {
 };
 const showCircleGraph = function(c, gdata) {
 	const data = omitData(gdata.data);
-	const unit = gdata.unit;
+	const unit = gdata.sum === undefined ? gdata.unit : "票";
 	const g = c.getContext("2d");
 	extendGraphics(g);
 	g.canvas1 = c;
@@ -347,9 +373,13 @@ const toTable = function(array) {
 
 // entry
 
+const cache = {};
 const show = async (url) => {
-	console.log(url);
-	csvdata = await CSV.fetch(url);
+	csvdata = cache[url];
+	if (!csvdata) {
+		console.log(url);
+		cache[url] = csvdata = await CSV.fetch(url);
+	}
 	showGraph();
 	chkmulti.oninput = () => showGraph();
 };
@@ -422,6 +452,7 @@ select {
 	display: inline-block;
 	width: 400px;
 	height: 400px;
+	vertical-align: top;
 }
 #title {
 	margin-top: 1em;
@@ -432,6 +463,10 @@ select {
 button {
 	margin: 3px;
 	background-color: white;
+}
+#tbl {
+	display: inline-block;
+	padding-left: 1em;
 }
 #tbl table {
 	display: inline-block;
@@ -466,9 +501,9 @@ h3 {
 <select id="seldata"></select><br>
 <div id="btns"></div><br>
 <canvas id="canvas"></canvas>
-<div id="tbl"></div>
+<div id="tbl"></div><br>
 	
-<label><input type="checkbox" id="chkmulti">高度な分析</label>
+<label><input type="checkbox" id="chkmulti">詳細な分析</label>
 <div id="credit">
 DATA: <a href=https://www.city.sabae.fukui.jp/about_city/opendata/data_list/172825719.html>鯖江市政に関する市民アンケート結果（Excel） – めがねのまちさばえ 鯖江市<br>
 forked from: <a href=https://fukuno.jig.jp/app/csv/qgraph-localict2018.html>福井県こどもプログラミング協議会 2018年度 地域ICTクラブ アンケート結果</a><br>
