@@ -5,13 +5,12 @@ import { CSV } from "https://js.sabae.cc/CSV.js";
 import { extendGraphics } from "https://js.sabae.cc/extendGraphics.js";
 import { hsl2rgb } from "https://js.sabae.cc/hsl2rgb.js";
 import { Num } from "https://js.sabae.cc/Num.js";
+import { ArrayUtil } from "https://js.sabae.cc/ArrayUtil.js";
 
 let csvdata;
 
 const create = (tag) => document.createElement(tag);
 const clear = (ele) => ele.innerHTML = "";
-
-//const url = "R5bijon_chugakusei_kekka.csv";
 
 const seloffset = 3;
 
@@ -40,24 +39,7 @@ const isFiltered = (d) => {
 };
 
 const makeSelectOption = () => {
-	const bksel = btns.querySelector("select")?.value;
 	clear(btns);
-	const select = document.createElement("select");
-	btns.appendChild(select);
-	for (let i = seloffset; i < csvdata[0].length; i++) {
-		const d = csvdata[0][i];
-		const btn = create("option");
-		btn.textContent = d;
-		btn.value = i;
-		select.appendChild(btn);
-	}
-	select.onchange = () => sel(select.value);
-	if (bksel !== undefined) {
-		select.value = bksel;
-	}
-	//sel(seloffset);
-	sel(select.value);
-
 
 	filters.length = 0;
 	animduration = chkmulti.checked ? 1 : 100;
@@ -67,15 +49,17 @@ const makeSelectOption = () => {
 		for (let i = seloffset; i < csvdata[0].length; i++) {
 			const d = csvdata[0][i];
 			const d2 = makeResult(i).data;
-			if (Object.keys(d2).length > 20 || d.endsWith("その他")) continue;
+			const d2key = Object.keys(d2);
+			if (d2key.length > 20 || d.endsWith("その他")) continue;
 
 			const div = document.createElement("div");
 			btns2.appendChild(div);
 			const div2 = document.createElement("h3");
-			div2.textContent = (i - seloffset + 1) + ". " + d;
+			const no = (i - seloffset + 1);
+			div2.textContent = no + ". " + d;
 			div.appendChild(div2);
 			const chks = {};
-			for (const q in d2) {
+			for (const q of no == 8 ? d2key.sort() : d2key) {
 				const lbl = document.createElement("labal");
 				const chk = document.createElement("input");
 				chk.type = "checkbox";
@@ -97,9 +81,28 @@ const makeSelectOption = () => {
 			*/
 		}
 	}
+
+	const bksel = btns.querySelector("select")?.value;
+	const select = document.createElement("select");
+	divsel.innerHTML = "";
+	divsel.appendChild(select);
+	for (let i = seloffset; i < csvdata[0].length; i++) {
+		const d = csvdata[0][i];
+		const btn = create("option");
+		btn.textContent = d;
+		btn.value = i;
+		select.appendChild(btn);
+	}
+	select.value = 10;
+	select.onchange = () => sel(select.value);
+	if (bksel !== undefined) {
+		select.value = bksel;
+	}
+	//sel(seloffset);
+	sel(select.value);
+
 };
 const showGraph = () => {
-	//makeSelectData();
 	makeSelectOption();
 };
 
@@ -227,10 +230,12 @@ const omitData = (data) => {
 			etc += data[n];
 		}
 	}
-	if (data2["その他"]) {
-		data2["その他"] += etc;
-	} else {
-		data2["その他"] = etc;
+	if (etc > 0) {
+		if (data2["その他"]) {
+			data2["その他"] += etc;
+		} else {
+			data2["その他"] = etc;
+		}
 	}
 	return data2;
 };
@@ -372,38 +377,29 @@ const toTable = function(array) {
 };
 
 // entry
-
-const cache = {};
-const show = async (url) => {
-	csvdata = cache[url];
-	if (!csvdata) {
-		console.log(url);
-		cache[url] = csvdata = await CSV.fetch(url);
+onload = async () => {
+	const url = "R5_vision_all.csv";
+	csvdata = await CSV.fetch(url);
+	/*
+	const ts = ArrayUtil.toUnique(CSV.toJSON(csvdata).map(i => i.属性));
+	console.log(ts)
+	for (const t of ts) {
+		const lbl = create("label");
+		const inp = create("input");
+		inp.type = "checkbox";
+		inp.checked = true;
+		lbl.appendChild(inp);
+		const span = create("span");
+		span.textContent = t;
+		lbl.appendChild(span);
+		types.appendChild(lbl);
+		typefilter[t] = inp;
+		inp.oninput = () => showGraph();
 	}
+	*/
+
 	showGraph();
 	chkmulti.oninput = () => showGraph();
-};
-
-const makeSelectData = () => {
-	clear(seldata);
-	const list = [
-		["chugakusei", "中学生"],
-		["kokosei", "高校生"],
-		["ippan", "一般"],
-	];
-	for (const l of list) {
-		const opt = create("option");
-		const url = "R5bijon_" + l[0] + "_kekka.csv";
-		opt.value = url;
-		opt.textContent = l[1];
-		seldata.appendChild(opt);
-		seldata.onchange = () => show(seldata.value);
-	};
-};
-
-onload = async () => {
-	makeSelectData();
-	show(seldata.value);
 };
 
 </script>
@@ -483,13 +479,15 @@ button {
 h3 {
 	margin: 0.2em;
 }
-/*
-#btns > *:nth-child(2) {
+#btns {
 	text-align: left;
 	padding: 0 1em;
+	font-size: 90%;
 }
-*/
 #credit {
+	margin-top: 1em;
+}
+#chkmulti {
 	margin-top: 1em;
 }
 </style>
@@ -498,14 +496,15 @@ h3 {
 
 <h1>鯖江将来ビジョンアンケート結果 2023</h1>
 
-<select id="seldata"></select><br>
+<div id="types"></div>
 <div id="btns"></div><br>
+<div id="divsel"></div>
 <canvas id="canvas"></canvas>
 <div id="tbl"></div><br>
 	
 <label><input type="checkbox" id="chkmulti">詳細な分析</label>
 <div id="credit">
-DATA: <a href=https://www.city.sabae.fukui.jp/about_city/opendata/data_list/172825719.html>鯖江市政に関する市民アンケート結果（Excel） – めがねのまちさばえ 鯖江市<br>
+DATA: <a href=https://www.city.sabae.fukui.jp/about_city/opendata/data_list/172825719.html>鯖江市政に関する市民アンケート結果（Excel） – めがねのまちさばえ 鯖江市</a> → <a href=R5_vision_all.csv>正規化CSVオープンデータ</a><br>
 forked from: <a href=https://fukuno.jig.jp/app/csv/qgraph-localict2018.html>福井県こどもプログラミング協議会 2018年度 地域ICTクラブ アンケート結果</a><br>
 APP: <a href="https://github.com/code4sabae/civic-voice/">src on GitHub</a><br>
 </div>
