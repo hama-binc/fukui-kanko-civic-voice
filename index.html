@@ -275,15 +275,19 @@ const showTable = function(div, gdata) {
     }
   }
   for (const n in data) {
-    d.push([ n, data[n] ]);
+    d.push([n, data[n]]);
   }
-  d.sort(function(a, b) {
-    if (a[1] < b[1])
-      return 1;
-    if (a[1] == b[1])
-      return 0;
-    return -1;
-  });
+  
+  // sort
+  if (!sortByFixed(d)) {
+    d.sort(function(a, b) {
+      if (a[1] < b[1])
+        return 1;
+      if (a[1] == b[1])
+        return 0;
+      return -1;
+    });
+  }
   
   d.push(["合計", sum]);
   const tbl = create("table");
