@@ -12,6 +12,8 @@ import { ArrayUtil } from "https://js.sabae.cc/ArrayUtil.js";
 const multiseparator = ", ";
 
 let csvdata;
+let types;
+let selidx;
 
 const create = (tag) => document.createElement(tag);
 const clear = (ele) => ele.innerHTML = "";
@@ -52,6 +54,32 @@ const FIXED_NAMES = [
   ["5", "4", "3", "2", "1"],
   ["10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "0"],
 ];
+
+const getAnswerTypes = (csvdata) => {
+  const keys = csvdata[0];
+  const types = [];
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const data = [];
+    for (let j = 1; j < csvdata.length; j++) {
+      data.push(csvdata[j][i]);
+    }
+    const names = ArrayUtil.toUnique(data).sort();
+    let type = null;
+    for (let i = 0; i < FIXED_NAMES.length; i++) {
+      const fixed = FIXED_NAMES[i];
+      const fixeds = [...fixed].sort();
+      if (equalsArray(fixeds, names)) {
+        type = fixed;
+        break;
+      }
+    }
+    types.push(type);
+  }
+  return types;
+};
+
+
 const equalsArray = (a, b) => {
   if (a == b) return true;
   if (!a || !b) return false;
@@ -75,6 +103,15 @@ const sortByFixed = (data) => {
     }
   }
   return false;
+};
+const sortByType = (data) => {
+  const fixed = types[selidx];
+  if (!fixed) return false;
+  for (const name of fixed) {
+    if (!data.find(i => i[0] == name)) data.push([name, 0]);
+  }
+  data.sort((a, b) => fixed.indexOf(a[0]) - fixed.indexOf(b[0]));
+  return true;
 };
 const sortForChart = (data) => {
   data.sort((a, b) => {
@@ -188,7 +225,6 @@ const makeSelectOption = () => {
   }
   //sel(seloffset);
   sel(select.value);
-
 };
 const showGraph = () => {
   makeSelectOption();
@@ -257,6 +293,7 @@ const makeResult = (idx) => {
   }
 };
 const sel = function(idx) {
+  selidx = idx;
   const gdata = makeResult(idx);
   showCircleGraph(canvas, gdata);
   clear(tbl);
@@ -279,7 +316,8 @@ const showTable = function(div, gdata) {
   }
   
   // sort
-  if (!sortByFixed(d)) {
+  //if (!sortByFixed(d)) {
+  if (!sortByType(d)) {
     d.sort(function(a, b) {
       if (a[1] < b[1])
         return 1;
@@ -311,7 +349,7 @@ const showTable = function(div, gdata) {
   }
   div.appendChild(tbl);
 };
-const omitData = (data) => {
+const omitData = (data, thr = 0.01) => {
   let sum = 0;
   for (const d of data) {
     sum += d[1];
@@ -366,9 +404,12 @@ const showCircleGraph = function(c, gdata) {
   }
 
   let d = d0;
-  if (!sortByFixed(d0)) {
+  //if (!sortByFixed(d0)) {
+  if (!sortByType(d)) {
     d = omitData(d0);
     sortForChart(d);
+  } else {
+    d = omitData(d0, 0);
   }
 
   g.setFont = function(sh) {
@@ -461,6 +502,7 @@ const showCircleGraph = function(c, gdata) {
 onload = async () => {
   const url = "kanko_20240117-1.csv";
   csvdata = await CSV.fetch(url);
+  types = getAnswerTypes(csvdata);
 
   showGraph();
   chkmulti.oninput = () => showGraph();
