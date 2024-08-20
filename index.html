@@ -500,12 +500,32 @@ const showCircleGraph = function(c, gdata) {
 
 // entry
 onload = async () => {
-  const url = "kanko_20240117-1.csv";
-  csvdata = await CSV.fetch(url);
-  types = getAnswerTypes(csvdata);
+  const dates = {
+    "2024年1月": "kanko_20240117-1.csv",
+    "2024年8月": "kanko_202408.csv",
+  };
 
-  showGraph();
-  chkmulti.oninput = () => showGraph();
+  for (const date in dates) {
+    const opt = document.createElement("option");
+    opt.value = dates[date];
+    opt.textContent = date;
+    seldate.appendChild(opt);
+    opt.selected = true;
+  }
+  if (document.location.hash.substring(1)) {
+    seldate.value = document.location.hash.substring(1);
+  }
+  
+  const show = async () => {
+    const url = seldate.value;
+    csvdata = await CSV.fetch(url);
+    types = getAnswerTypes(csvdata);
+
+    showGraph();
+    chkmulti.oninput = () => showGraph();
+  };
+  seldate.onchange = () => show();
+  show();
 };
 
 </script>
@@ -603,6 +623,7 @@ h3 {
 
 <h1>福井県の観光による住民幸福度に関するアンケート結果 2024</h1>
 
+<select id="seldate"></select><br>
 <div id="types"></div>
 <div id="btns"></div><br>
 <div id="divsel"></div>
