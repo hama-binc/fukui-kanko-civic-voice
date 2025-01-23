@@ -521,7 +521,7 @@ onload = async () => {
       const hashn = isNaN(parseInt(hash)) ? 0 : parseInt(hash);
       if (hashn == 0) {
       } else if (hashn < 0) {
-        const date = dates0[dates0.length + hashn];
+        const date = dates0[dates0.length + hashn - 1];
         seldate.value = date.filename;
       } else {
         seldate.value = dates0[hashn].filename;
