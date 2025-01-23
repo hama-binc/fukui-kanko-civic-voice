@@ -9,4 +9,4 @@
 
 - [kanko_20240117-1.csv](kanko_20240117-1.csv) CC BY [福井県観光DX推進マーケティングデータコンソーシアム](https://www.fukuishimbun.co.jp/category/fukui-kankodx)
 - [kanko_202408.csv](kanko_202408.csv)  CC BY [福井県観光DX推進マーケティングデータコンソーシアム](https://www.fukuishimbun.co.jp/category/fukui-kankodx)
-
+- [kanko_20250119.csv](kanko_20250119.csv) CC BY [福井県観光DX推進マーケティングデータコンソーシアム](https://www.fukuishimbun.co.jp/category/fukui-kankodx)
